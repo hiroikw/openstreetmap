@@ -37,15 +37,15 @@ class GetOsmAPI(Resource):
       return rho
 
     args = self.reqparse.parse_args()
-    lat_a = args.lat
-    lon_a = args.lon
+    lat_a = args.lat  #データ受け取り
+    lon_a = args.lon  #データ受け取り
+    
     # print(args.lat, args.lon)
     url = 'https://www.google.com/maps/search/?api=1&query='
     db = get_db('osm')
     min_distance=9999999
     # coll ~= db.samples
     #テストとして京都府庁の緯度経度を使用（緯度: 35.020956 経度: 135.75556)  
-    #34.9257634,135.7696182
     # lon_a =35.043399
     # lat_a =135.733959
     coll = db['sample']
@@ -53,7 +53,7 @@ class GetOsmAPI(Resource):
     for one in data:
       lon_b = one['lon']
       lat_b = one['lat']
-      rho = cal_rho(lat_a, lon_a, lon_b, lat_b)
+      rho = cal_rho(float(lon_a), float(lat_a), float(lon_b), float(lat_b))
       distance = rho
       if(distance < min_distance):
         min_distance = distance
