@@ -1,6 +1,8 @@
 import numpy as np
 import requests
 
+from math import sin, cos, sqrt, atan2, radians
+
 from flask_restful import Resource, reqparse, abort
 
 from osmread import parse_file, Node
@@ -12,28 +14,19 @@ from src.database import get_db
 class GetOsmAPI(Resource):
   def __init__(self):
     self.reqparse = reqparse.RequestParser()
+    self.reqparse.add_argument('lat',required=True)
+    self.reqparse.add_argument('lon',required=True)
     super(GetOsmAPI, self).__init__()
+  
   def get(self):
-    url = 'https://www.google.com/maps/search/?api=1&query='
-    min_destance=9999999
-    db = get_db('osm')
-    # coll ~= db.samples
-    #テストとして京都府庁の緯度経度を使用（緯度: 35.020956 経度: 135.755574)
-    shortest=1000000000   
-    dest_lon = 135.755574
-    dest_lat = 35.020956
-    coll = db['sample']
-    data = coll.find({'tags.shop':'convenience'})
-    for one in data:
-      lon = one['lon']
-      lat = one['lat']
+    def cal_rho(lon_a,lat_a,lon_b,lat_b):
       ra=6378.140  # equatorial radius (km)
       rb=6356.755  # polar radius (km)
       F=(ra-rb)/ra # flattening of the earth
-      rad_lat_a=np.radians(dest_lat)
-      rad_lon_a=np.radians(dest_lon)
-      rad_lat_b=np.radians(lat)
-      rad_lon_b=np.radians(lon)
+      rad_lat_a=np.radians(lat_a)
+      rad_lon_a=np.radians(lon_a)
+      rad_lat_b=np.radians(lat_b)
+      rad_lon_b=np.radians(lon_b)
       pa=np.arctan(rb/ra*np.tan(rad_lat_a))
       pb=np.arctan(rb/ra*np.tan(rad_lat_b))
       xx=np.arccos(np.sin(pa)*np.sin(pb)+np.cos(pa)*np.cos(pb)*np.cos(rad_lon_a-rad_lon_b))
@@ -41,13 +34,32 @@ class GetOsmAPI(Resource):
       c2=(np.sin(xx)+xx)*(np.sin(pa)-np.sin(pb))**2/np.sin(xx/2)**2
       dr=F/8*(c1-c2)
       rho=ra*(xx+dr)
+      return rho
+
+    args = self.reqparse.parse_args()
+    lat_a = args.lat
+    lon_a = args.lon
+    # print(args.lat, args.lon)
+    url = 'https://www.google.com/maps/search/?api=1&query='
+    db = get_db('osm')
+    min_distance=9999999
+    # coll ~= db.samples
+    #テストとして京都府庁の緯度経度を使用（緯度: 35.020956 経度: 135.75556)  
+    #34.9257634,135.7696182
+    # lon_a =35.043399
+    # lat_a =135.733959
+    coll = db['sample']
+    data = coll.find({'tags.shop':'convenience'})
+    for one in data:
+      lon_b = one['lon']
+      lat_b = one['lat']
+      rho = cal_rho(lat_a, lon_a, lon_b, lat_b)
       distance = rho
-      if(distance<min_destance):
-        min_destance = distance
-        min_lon = lon
-        min_lat = lat
-    url = url + str(min_lat) + ',' + str(min_lon)
+      if(distance < min_distance):
+        min_distance = distance
+        min_lon = lon_b
+        min_lat = lat_b
     return jsonify({
-      str(min_lat) + ',' + str(min_lon):url
+      "lon":str(min_lon),"lat":(min_lat),"url":url + str(min_lat) + ',' + str(min_lon)
     })
 

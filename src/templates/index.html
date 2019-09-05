@@ -2,20 +2,41 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8">
-    <title>HOGE</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   </head>
   <body>
     <p>現在位置を入力してください。</p>
-    <input type="search" name="search" size="20" id="lat" placeholder="緯度">
-    <input type="search" name="search" size="20" id="lon" placeholder="経度">
+    <input type="search" name="lat" size="20" id="lat" placeholder="緯度">
+    <input type="search" name="lon" size="20" id="lon" placeholder="経度">
     <input type="submit" name="submit" value="検索" onclick="OnButtonClick();">
-    </body>
+    <p>京都府庁の緯度経度（緯度: 35.020956 経度: 135.755574)</p>
+  </body>
 </html>
 <script language="javascript" type="text/javascript">
     function OnButtonClick(){
-        lon = document.getElementById("lon").value;
-        lat = document.getElementById("lat").value;
-        url = 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lon;
-        location.href=url;
+      lon = document.getElementById("lon").value;
+      lat = document.getElementById("lat").value;
+      console.log(lon,lat);
+      $.ajax({ // json読み込み開始
+        type     : 'get',
+        url      : 'http://localhost:5000/getosm',
+        data:{
+          'lat':lon,
+          'lon':lat
+        }
+      })
+      .then(
+        function(data) { // jsonの読み込みに成功した時
+          console.log(data);
+          lat = data.lat;
+          lon = data.lon;
+          url = 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lon;
+          location.href = url;
+        },
+        function() { //jsonの読み込みに失敗した時
+          console.log('失敗');
+        }
+      )
     }
+
 </script>
